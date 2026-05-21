@@ -1,0 +1,13 @@
+{
+  "name": "mentorados-calendario",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check calendar.js",
+    "hash-token": "node scripts/hash-token.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

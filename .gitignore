@@ -1,0 +1,7 @@
+.env
+node_modules/
+*.log
+*.out.log
+*.err.log
+static-server*.log
+supabase-server*.log

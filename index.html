@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A Liga dos Palestrantes - Calendario de Eventos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;500;600;700" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-topbar">
+      <a class="brand logo-brand" href="index.html" aria-label="A Liga dos Palestrantes">
+        <img src="logo-liga-horizontal.png" alt="A Liga dos Palestrantes" />
+      </a>
+      <nav class="top-actions" aria-label="Navegacao principal">
+        <a href="index.html">Explorar</a>
+        <a class="button primary compact" href="inserir.html">
+          <span class="material-symbols-outlined">add</span>
+          Criar evento
+        </a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">A Liga dos Palestrantes</p>
+          <h1>Explorar eventos</h1>
+          <p>Descubra as proximas conexoes, encontros e experiencias dos mentorados.</p>
+        </div>
+        <div class="view-switch" aria-label="Alternar visualizacao">
+          <button class="view-button active" id="listViewBtn" type="button">
+            <span class="material-symbols-outlined">format_list_bulleted</span>
+            Lista
+          </button>
+          <button class="view-button" id="calendarViewBtn" type="button">
+            <span class="material-symbols-outlined">calendar_view_month</span>
+            Calendario
+          </button>
+        </div>
+      </section>
+
+      <section class="filter-row" aria-label="Filtros rapidos">
+        <button class="filter-chip active" type="button" data-filter="all">
+          <span class="material-symbols-outlined">all_inclusive</span>
+          Todos
+        </button>
+        <button class="filter-chip" type="button" data-filter="presencial">
+          <span class="material-symbols-outlined">location_on</span>
+          Presenciais
+        </button>
+        <button class="filter-chip" type="button" data-filter="online">
+          <span class="material-symbols-outlined">videocam</span>
+          Online
+        </button>
+      </section>
+
+      <section class="event-grid" id="eventGrid" aria-label="Eventos em destaque"></section>
+
+      <section class="calendar-panel hidden" id="calendarPanel" aria-label="Calendario de eventos">
+        <div class="calendar-toolbar">
+          <div>
+            <p class="eyebrow">Agenda</p>
+            <h2 id="monthLabel"></h2>
+          </div>
+          <div class="calendar-controls">
+            <button class="icon-button" id="prevMonth" type="button" aria-label="Mes anterior">
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <button class="icon-button" id="nextMonth" type="button" aria-label="Proximo mes">
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="weekday-grid" aria-hidden="true">
+          <span>Dom</span>
+          <span>Seg</span>
+          <span>Ter</span>
+          <span>Qua</span>
+          <span>Qui</span>
+          <span>Sex</span>
+          <span>Sab</span>
+        </div>
+
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+
+      <section class="upcoming-section" aria-label="Proximos eventos">
+        <div class="section-title">
+          <p class="eyebrow">Proximos</p>
+          <h2>Agenda resumida</h2>
+        </div>
+        <div class="agenda-list" id="eventList"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navegacao mobile">
+      <a class="active" href="index.html">
+        <span class="material-symbols-outlined">search</span>
+        Explorar
+      </a>
+      <a href="inserir.html">
+        <span class="material-symbols-outlined">add_circle</span>
+        Novo
+      </a>
+    </nav>
+
+    <script src="calendar.js"></script>
+  </body>
+</html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A Liga dos Palestrantes - Cadastrar Evento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;500;600;700" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-topbar">
+      <a class="brand logo-brand" href="index.html" aria-label="A Liga dos Palestrantes">
+        <img src="logo-liga-horizontal.png" alt="A Liga dos Palestrantes" />
+      </a>
+      <nav class="top-actions" aria-label="Navegacao principal">
+        <a href="index.html">Explorar</a>
+        <a class="active-link" href="inserir.html">Novo evento</a>
+      </nav>
+    </header>
+
+    <main class="form-page">
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">A Liga dos Palestrantes</p>
+          <h1>Cadastrar novo evento</h1>
+          <p>Preencha os detalhes para publicar o evento no calendario do ecossistema.</p>
+        </div>
+      </section>
+
+      <div class="form-layout">
+        <aside class="form-sidebar">
+          <section class="info-card">
+            <span class="material-symbols-outlined card-icon">lock</span>
+            <h2>Validar acesso</h2>
+            <p>Use o token recebido para autenticar a publicacao do evento.</p>
+            <label for="token">Token de acesso</label>
+            <input id="token" form="eventForm" name="token" type="password" autocomplete="off" required placeholder="Digite seu token" />
+          </section>
+
+          <section class="info-card dark">
+            <span class="material-symbols-outlined card-icon">tips_and_updates</span>
+            <h2>Dica de publicacao</h2>
+            <p>Eventos com banner em alta qualidade e descricao clara tendem a gerar mais cliques.</p>
+          </section>
+        </aside>
+
+        <form class="event-form" id="eventForm">
+          <section class="form-card">
+            <div class="form-section-title">
+              <span class="material-symbols-outlined">edit_calendar</span>
+              <h2>Informacoes gerais</h2>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-row full">
+                <label for="title">Nome do evento</label>
+                <input id="title" name="title" type="text" required placeholder="Ex.: Imersao presencial" />
+              </div>
+
+              <div class="form-row">
+                <label for="clientName">Nome do palestrante</label>
+                <input id="clientName" name="clientName" type="text" required placeholder="Nome do palestrante" />
+              </div>
+
+              <div class="form-row">
+                <label for="link">Link de inscricao</label>
+                <input id="link" name="link" type="url" placeholder="https://..." />
+              </div>
+
+              <div class="form-row">
+                <label for="date">Data</label>
+                <input id="date" name="date" type="date" required />
+              </div>
+
+              <div class="form-row">
+                <label for="time">Horario</label>
+                <input id="time" name="time" type="time" />
+              </div>
+
+              <div class="form-row full">
+                <label for="city">Cidade ou local</label>
+                <input id="city" name="city" type="text" placeholder="Cidade / UF ou plataforma online" />
+              </div>
+
+              <div class="form-row full">
+                <label>Categoria</label>
+                <div class="checkbox-group">
+                  <label class="check-card">
+                    <input name="categories" type="checkbox" value="online" />
+                    <span class="material-symbols-outlined">videocam</span>
+                    Online
+                  </label>
+                  <label class="check-card">
+                    <input name="categories" type="checkbox" value="presencial" />
+                    <span class="material-symbols-outlined">location_on</span>
+                    Presencial
+                  </label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="form-card">
+            <div class="form-section-title">
+              <span class="material-symbols-outlined">image</span>
+              <h2>Imagens</h2>
+            </div>
+
+            <div class="media-grid">
+              <div class="media-field">
+                <span class="material-symbols-outlined">panorama</span>
+                <label for="imageUrl1">Imagem principal</label>
+                <input id="imageUrl1" name="imageUrl1" type="url" placeholder="URL do banner 16:9" />
+              </div>
+
+              <div class="media-field">
+                <span class="material-symbols-outlined">account_circle</span>
+                <label for="imageUrl2">Imagem secundaria</label>
+                <input id="imageUrl2" name="imageUrl2" type="url" placeholder="URL de apoio ou palestrante" />
+              </div>
+            </div>
+          </section>
+
+          <section class="form-card">
+            <div class="form-section-title">
+              <span class="material-symbols-outlined">notes</span>
+              <h2>Descricao</h2>
+            </div>
+
+            <div class="form-row full">
+              <label for="description">Descricao curta</label>
+              <textarea id="description" name="description" rows="5" placeholder="Resumo do evento para aparecer na agenda"></textarea>
+            </div>
+          </section>
+
+          <div class="form-actions">
+            <p id="formMessage" role="status"></p>
+            <button class="button primary" type="submit">
+              Publicar evento
+              <span class="material-symbols-outlined">rocket_launch</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navegacao mobile">
+      <a href="index.html">
+        <span class="material-symbols-outlined">search</span>
+        Explorar
+      </a>
+      <a class="active" href="inserir.html">
+        <span class="material-symbols-outlined">add_circle</span>
+        Novo
+      </a>
+    </nav>
+
+    <script src="calendar.js"></script>
+  </body>
+</html>
