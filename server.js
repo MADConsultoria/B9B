@@ -9,6 +9,14 @@ const supabaseUrl = cleanEnv(process.env.SUPABASE_URL);
 const supabaseServiceKey = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
 const tokenPepper = cleanEnv(process.env.TOKEN_PEPPER) || "local-dev";
 const hasSupabase = Boolean(supabaseUrl && supabaseServiceKey);
+const imageBucket = "event-images";
+const maxImageSize = 8 * 1024 * 1024;
+const allowedImageTypes = new Map([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"]
+]);
+const localUploads = new Map();
 
 const localState = {
   clients: [
@@ -122,6 +130,38 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  if (request.method === "POST" && url.pathname === "/api/uploads/images") {
+    const client = await validateToken(request.headers["x-upload-token"]);
+
+    if (!client) {
+      sendJson(response, 401, { error: "Token invalido ou inativo." });
+      return;
+    }
+
+    const image = await readImage(request);
+    const imageUrl = await uploadImage(client, image);
+    sendJson(response, 201, { url: imageUrl });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname.startsWith("/api/uploads/local/")) {
+    const uploadId = url.pathname.replace("/api/uploads/local/", "");
+    const image = localUploads.get(uploadId);
+
+    if (!image) {
+      sendJson(response, 404, { error: "Imagem nao encontrada." });
+      return;
+    }
+
+    response.writeHead(200, {
+      "Content-Type": image.contentType,
+      "Content-Length": image.buffer.length,
+      "Cache-Control": "public, max-age=31536000, immutable"
+    });
+    response.end(image.buffer);
+    return;
+  }
+
   sendJson(response, 404, { error: "Rota nao encontrada." });
 }
 
@@ -207,6 +247,41 @@ async function createEvent(client, body) {
   return data[0];
 }
 
+async function uploadImage(client, image) {
+  const extension = allowedImageTypes.get(image.contentType);
+  const objectPath = `${client.id}/${new Date().getUTCFullYear()}/${crypto.randomUUID()}.${extension}`;
+
+  if (!hasSupabase) {
+    const uploadId = crypto.randomUUID();
+    localUploads.set(uploadId, image);
+    return `/api/uploads/local/${uploadId}`;
+  }
+
+  const response = await fetch(
+    `${supabaseUrl}/storage/v1/object/${imageBucket}/${objectPath}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: supabaseServiceKey,
+        Authorization: `Bearer ${supabaseServiceKey}`,
+        "Content-Type": image.contentType,
+        "Cache-Control": "31536000",
+        "x-upsert": "false"
+      },
+      body: image.buffer
+    }
+  );
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const error = new Error(data?.message || data?.error || "Nao foi possivel enviar a imagem.");
+    error.statusCode = response.status;
+    throw error;
+  }
+
+  return `${supabaseUrl}/storage/v1/object/public/${imageBucket}/${objectPath}`;
+}
+
 async function supabaseFetch(pathname, options = {}) {
   const response = await fetch(`${supabaseUrl}${pathname}`, {
     ...options,
@@ -287,6 +362,83 @@ function readJson(request) {
   });
 }
 
+function readImage(request) {
+  return new Promise((resolve, reject) => {
+    const contentType = String(request.headers["content-type"] || "").split(";")[0].toLowerCase();
+    const contentLength = Number(request.headers["content-length"] || 0);
+    const chunks = [];
+    let size = 0;
+    let tooLarge = false;
+
+    if (!allowedImageTypes.has(contentType)) {
+      const error = new Error("Formato invalido. Envie uma imagem JPG, PNG ou WebP.");
+      error.statusCode = 415;
+      reject(error);
+      return;
+    }
+
+    if (contentLength > maxImageSize) {
+      const error = new Error("A imagem deve ter no maximo 8 MB.");
+      error.statusCode = 413;
+      reject(error);
+      return;
+    }
+
+    request.on("data", (chunk) => {
+      if (tooLarge) return;
+      size += chunk.length;
+      if (size > maxImageSize) {
+        tooLarge = true;
+        const error = new Error("A imagem deve ter no maximo 8 MB.");
+        error.statusCode = 413;
+        reject(error);
+        return;
+      }
+      chunks.push(chunk);
+    });
+
+    request.on("end", () => {
+      if (tooLarge) return;
+      if (!size) {
+        const error = new Error("Selecione uma imagem para enviar.");
+        error.statusCode = 400;
+        reject(error);
+        return;
+      }
+
+      const buffer = Buffer.concat(chunks);
+      if (!hasValidImageSignature(buffer, contentType)) {
+        const error = new Error("O arquivo enviado nao corresponde a uma imagem valida.");
+        error.statusCode = 415;
+        reject(error);
+        return;
+      }
+
+      resolve({ buffer, contentType });
+    });
+
+    request.on("error", reject);
+  });
+}
+
+function hasValidImageSignature(buffer, contentType) {
+  if (contentType === "image/jpeg") {
+    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+
+  if (contentType === "image/png") {
+    return buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  }
+
+  if (contentType === "image/webp") {
+    return buffer.length >= 12
+      && buffer.subarray(0, 4).toString("ascii") === "RIFF"
+      && buffer.subarray(8, 12).toString("ascii") === "WEBP";
+  }
+
+  return false;
+}
+
 function toPublicEvent(event) {
   return {
     id: event.id,
@@ -338,7 +490,7 @@ function cleanText(value) {
 function cleanUrl(value) {
   const text = cleanText(value);
   if (!text) return "";
-  if (!/^https?:\/\//i.test(text)) return "";
+  if (!/^(https?:\/\/|\/api\/uploads\/local\/[a-z0-9-]+$)/i.test(text)) return "";
   return text;
 }
 

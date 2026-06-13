@@ -111,17 +111,22 @@
 
             <div class="media-grid">
               <div class="media-field">
+                <img class="media-preview landscape" id="imagePreview1" alt="Previa da imagem principal" hidden />
                 <span class="material-symbols-outlined">panorama</span>
-                <label for="imageUrl1">Imagem principal</label>
-                <input id="imageUrl1" name="imageUrl1" type="url" placeholder="URL do banner 16:9" />
+                <label for="imageFile1">Imagem principal</label>
+                <p>Banner 16:9. Recomendado: 1600 x 900 px.</p>
+                <input id="imageFile1" name="imageFile1" type="file" accept="image/jpeg,image/png,image/webp" data-image-upload data-preview="imagePreview1" />
               </div>
 
               <div class="media-field">
+                <img class="media-preview square" id="imagePreview2" alt="Previa da imagem secundaria" hidden />
                 <span class="material-symbols-outlined">account_circle</span>
-                <label for="imageUrl2">Imagem secundaria</label>
-                <input id="imageUrl2" name="imageUrl2" type="url" placeholder="URL de apoio ou palestrante" />
+                <label for="imageFile2">Imagem secundaria</label>
+                <p>Foto quadrada. Recomendado: 800 x 800 px.</p>
+                <input id="imageFile2" name="imageFile2" type="file" accept="image/jpeg,image/png,image/webp" data-image-upload data-preview="imagePreview2" />
               </div>
             </div>
+            <p class="media-help">Formatos aceitos: JPG, PNG ou WebP. Limite de 8 MB por imagem.</p>
           </section>
 
           <section class="form-card">

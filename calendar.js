@@ -43,12 +43,16 @@ function setupInsertPage() {
   const form = document.getElementById("eventForm");
   const message = document.getElementById("formMessage");
   const dateInput = document.getElementById("date");
+  const imageInputs = [...form.querySelectorAll('input[type="file"][data-image-upload]')];
   dateInput.min = formatDateInput(new Date());
+  imageInputs.forEach(setupImagePreview);
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
     message.className = "";
-    message.textContent = "Publicando evento...";
+    message.textContent = "Enviando imagens e publicando evento...";
+    submitButton.disabled = true;
 
     const formData = new FormData(form);
     const payload = {
@@ -59,13 +63,20 @@ function setupInsertPage() {
       time: clean(formData.get("time")),
       city: clean(formData.get("city")),
       link: clean(formData.get("link")),
-      imageUrl1: clean(formData.get("imageUrl1")),
-      imageUrl2: clean(formData.get("imageUrl2")),
+      imageUrl1: "",
+      imageUrl2: "",
       categories: formData.getAll("categories").map(clean),
       description: clean(formData.get("description"))
     };
 
     try {
+      const [imageUrl1, imageUrl2] = await Promise.all([
+        uploadImage(formData.get("imageFile1"), payload.token),
+        uploadImage(formData.get("imageFile2"), payload.token)
+      ]);
+      payload.imageUrl1 = imageUrl1;
+      payload.imageUrl2 = imageUrl2;
+
       const { event: createdEvent } = await apiFetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,14 +85,71 @@ function setupInsertPage() {
 
       const eventUrl = getEventUrl(createdEvent);
       form.reset();
+      imageInputs.forEach(clearImagePreview);
       dateInput.min = formatDateInput(new Date());
       message.className = "success";
       message.innerHTML = `Evento publicado. <a href="${escapeAttribute(eventUrl)}">Abrir pagina do evento</a>`;
     } catch (error) {
       message.className = "error";
       message.textContent = error.message;
+    } finally {
+      submitButton.disabled = false;
     }
   });
+}
+
+function setupImagePreview(input) {
+  input.addEventListener("change", () => {
+    const preview = document.getElementById(input.dataset.preview);
+    const file = input.files?.[0];
+    if (!preview) return;
+
+    if (!file) {
+      clearImagePreview(input);
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      input.value = "";
+      clearImagePreview(input);
+      window.alert("A imagem deve ter no maximo 8 MB.");
+      return;
+    }
+
+    preview.src = URL.createObjectURL(file);
+    preview.hidden = false;
+    input.closest(".media-field")?.classList.add("has-preview");
+  });
+}
+
+function clearImagePreview(input) {
+  const preview = document.getElementById(input.dataset.preview);
+  if (preview?.src.startsWith("blob:")) URL.revokeObjectURL(preview.src);
+  if (preview) {
+    preview.removeAttribute("src");
+    preview.hidden = true;
+  }
+  input.closest(".media-field")?.classList.remove("has-preview");
+}
+
+async function uploadImage(file, token) {
+  if (!(file instanceof File) || !file.size) return "";
+
+  const response = await fetch("/api/uploads/images", {
+    method: "POST",
+    headers: {
+      "Content-Type": file.type,
+      "X-Upload-Token": token
+    },
+    body: file
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Nao foi possivel enviar a imagem.");
+  }
+
+  return data.url;
 }
 
 async function setupEventPage() {
@@ -420,6 +488,6 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   const trimmed = clean(value);
-  if (!/^(https?:\/\/|[a-z0-9_-]+\.html\?)/i.test(trimmed)) return "";
+  if (!/^(https?:\/\/|\/api\/uploads\/local\/[a-z0-9-]+$|[a-z0-9_-]+\.html\?)/i.test(trimmed)) return "";
   return escapeHtml(trimmed);
 }

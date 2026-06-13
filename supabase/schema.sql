@@ -35,5 +35,18 @@ create index if not exists events_slug_idx
 alter table public.event_clients enable row level security;
 alter table public.events enable row level security;
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'event-images',
+  'event-images',
+  true,
+  8388608,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
 -- O app usa a SERVICE_ROLE_KEY no servidor, que ignora RLS.
 -- Nao crie policies publicas agora; isso evita escrita/leitura direta pelo navegador.
