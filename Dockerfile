@@ -10,6 +10,7 @@ COPY inserir.html ./
 COPY evento.html ./
 COPY styles.css ./
 COPY logo-liga-horizontal.png ./
+COPY event-placeholder.svg ./
 COPY scripts ./scripts
 
 ENV NODE_ENV=production

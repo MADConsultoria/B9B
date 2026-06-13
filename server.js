@@ -206,9 +206,16 @@ async function validateToken(token) {
 async function createEvent(client, body) {
   const title = cleanText(body.title);
   const eventDate = cleanText(body.date);
+  const imageUrl1 = cleanUrl(body.imageUrl1);
 
   if (!title || !eventDate) {
     const error = new Error("Titulo e data sao obrigatorios.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!imageUrl1) {
+    const error = new Error("A imagem principal e obrigatoria.");
     error.statusCode = 400;
     throw error;
   }
@@ -222,7 +229,7 @@ async function createEvent(client, body) {
     event_time: cleanText(body.time) || null,
     city: cleanText(body.city),
     external_link: cleanUrl(body.link),
-    image_url_1: cleanUrl(body.imageUrl1),
+    image_url_1: imageUrl1,
     image_url_2: cleanUrl(body.imageUrl2),
     categories: cleanCategories(body.categories),
     description: cleanText(body.description),
@@ -326,8 +333,12 @@ function serveStatic(response, pathname) {
       return;
     }
 
+    const extension = path.extname(filePath);
     response.writeHead(200, {
-      "Content-Type": types[path.extname(filePath)] || "application/octet-stream"
+      "Content-Type": types[extension] || "application/octet-stream",
+      "Cache-Control": [".html", ".css", ".js"].includes(extension)
+        ? "no-cache"
+        : "public, max-age=86400"
     });
     response.end(content);
   });

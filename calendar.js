@@ -214,7 +214,7 @@ function renderEventGrid() {
     card.className = "event-card";
     const modes = getEventModes(event);
     const dateLabel = formatEventDate(event, { short: true });
-    const image = event.imageUrl1 || placeholderImage(event);
+    const image = event.imageUrl1 || placeholderImage();
 
     card.innerHTML = `
       <a class="event-card-image" href="${escapeAttribute(getEventUrl(event))}">
@@ -312,7 +312,7 @@ function renderEventList(container, events) {
     const item = document.createElement("article");
     item.className = "agenda-item";
     item.innerHTML = `
-      <img src="${escapeAttribute(event.imageUrl1 || placeholderImage(event))}" alt="${escapeAttribute(event.title)}" />
+      <img src="${escapeAttribute(event.imageUrl1 || placeholderImage())}" alt="${escapeAttribute(event.title)}" />
       <div>
         <span class="badge-stack inline">${renderBadges(event)}</span>
         <h3>${escapeHtml(event.title)}</h3>
@@ -329,7 +329,7 @@ function renderEventList(container, events) {
 
 function renderEventPage(event, detail) {
   document.title = `${event.title} | A Liga dos Palestrantes`;
-  const image = event.imageUrl1 || placeholderImage(event);
+  const image = event.imageUrl1 || placeholderImage();
   const secondaryImage = event.imageUrl2 || image;
 
   detail.innerHTML = `
@@ -459,11 +459,8 @@ function formatTime(value) {
   return String(value || "").slice(0, 5);
 }
 
-function placeholderImage(event) {
-  const mode = getEventModes(event)[0].key;
-  return mode === "presencial"
-    ? "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80"
-    : "https://images.unsplash.com/photo-1591115765373-5207764f72e7?auto=format&fit=crop&w=1200&q=80";
+function placeholderImage() {
+  return "event-placeholder.svg";
 }
 
 function formatDateInput(date) {
@@ -488,6 +485,6 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   const trimmed = clean(value);
-  if (!/^(https?:\/\/|\/api\/uploads\/local\/[a-z0-9-]+$|[a-z0-9_-]+\.html\?)/i.test(trimmed)) return "";
+  if (!/^(https?:\/\/|\/api\/uploads\/local\/[a-z0-9-]+$|[a-z0-9_-]+\.(?:html\?|svg$))/i.test(trimmed)) return "";
   return escapeHtml(trimmed);
 }
