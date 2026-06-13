@@ -71,7 +71,7 @@ function setupInsertPage() {
 
     try {
       const [imageUrl1, imageUrl2] = await Promise.all([
-        uploadImage(formData.get("imageFile1"), payload.token),
+        uploadImage(formData.get("imageFile1"), payload.token, true),
         uploadImage(formData.get("imageFile2"), payload.token)
       ]);
       payload.imageUrl1 = imageUrl1;
@@ -132,21 +132,34 @@ function clearImagePreview(input) {
   input.closest(".media-field")?.classList.remove("has-preview");
 }
 
-async function uploadImage(file, token) {
-  if (!(file instanceof File) || !file.size) return "";
+async function uploadImage(file, token, required = false) {
+  if (!(file instanceof File) || !file.size) {
+    if (required) throw new Error("Selecione a imagem principal novamente.");
+    return "";
+  }
 
   const response = await fetch("/api/uploads/images", {
     method: "POST",
     headers: {
-      "Content-Type": file.type,
+      "Content-Type": file.type || "application/octet-stream",
       "X-Upload-Token": token
     },
     body: file
   });
-  const data = await response.json();
+  const text = await response.text();
+  let data = {};
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
-    throw new Error(data.error || "Nao foi possivel enviar a imagem.");
+    if (response.status === 413) {
+      throw new Error("A imagem e maior que o limite permitido pelo servidor.");
+    }
+    throw new Error(data.error || `Nao foi possivel enviar a imagem (erro ${response.status}).`);
   }
 
   return data.url;

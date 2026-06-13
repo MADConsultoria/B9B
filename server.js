@@ -264,6 +264,8 @@ async function uploadImage(client, image) {
     return `/api/uploads/local/${uploadId}`;
   }
 
+  await ensureImageBucket();
+
   const response = await fetch(
     `${supabaseUrl}/storage/v1/object/${imageBucket}/${objectPath}`,
     {
@@ -287,6 +289,49 @@ async function uploadImage(client, image) {
   }
 
   return `${supabaseUrl}/storage/v1/object/public/${imageBucket}/${objectPath}`;
+}
+
+async function ensureImageBucket() {
+  const headers = {
+    apikey: supabaseServiceKey,
+    Authorization: `Bearer ${supabaseServiceKey}`,
+    "Content-Type": "application/json"
+  };
+  const bucketResponse = await fetch(`${supabaseUrl}/storage/v1/bucket/${imageBucket}`, { headers });
+
+  if (bucketResponse.ok) return;
+
+  const bucketData = await bucketResponse.json().catch(() => null);
+  const bucketError = cleanText(
+    bucketData?.message || bucketData?.error || bucketData?.code
+  ).toLowerCase();
+  const bucketMissing = bucketResponse.status === 404
+    || (bucketResponse.status === 400 && bucketError.includes("not found"));
+
+  if (!bucketMissing) {
+    const error = new Error(bucketData?.message || bucketData?.error || "Nao foi possivel verificar o armazenamento de imagens.");
+    error.statusCode = bucketResponse.status;
+    throw error;
+  }
+
+  const createResponse = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      id: imageBucket,
+      name: imageBucket,
+      public: true,
+      file_size_limit: maxImageSize,
+      allowed_mime_types: [...allowedImageTypes.keys()]
+    })
+  });
+
+  if (!createResponse.ok && createResponse.status !== 409) {
+    const data = await createResponse.json().catch(() => null);
+    const error = new Error(data?.message || data?.error || "Nao foi possivel preparar o armazenamento de imagens.");
+    error.statusCode = createResponse.status;
+    throw error;
+  }
 }
 
 async function supabaseFetch(pathname, options = {}) {
@@ -375,18 +420,10 @@ function readJson(request) {
 
 function readImage(request) {
   return new Promise((resolve, reject) => {
-    const contentType = String(request.headers["content-type"] || "").split(";")[0].toLowerCase();
     const contentLength = Number(request.headers["content-length"] || 0);
     const chunks = [];
     let size = 0;
     let tooLarge = false;
-
-    if (!allowedImageTypes.has(contentType)) {
-      const error = new Error("Formato invalido. Envie uma imagem JPG, PNG ou WebP.");
-      error.statusCode = 415;
-      reject(error);
-      return;
-    }
 
     if (contentLength > maxImageSize) {
       const error = new Error("A imagem deve ter no maximo 8 MB.");
@@ -418,7 +455,8 @@ function readImage(request) {
       }
 
       const buffer = Buffer.concat(chunks);
-      if (!hasValidImageSignature(buffer, contentType)) {
+      const contentType = detectImageType(buffer);
+      if (!contentType) {
         const error = new Error("O arquivo enviado nao corresponde a uma imagem valida.");
         error.statusCode = 415;
         reject(error);
@@ -432,22 +470,24 @@ function readImage(request) {
   });
 }
 
-function hasValidImageSignature(buffer, contentType) {
-  if (contentType === "image/jpeg") {
-    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+function detectImageType(buffer) {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return "image/jpeg";
   }
 
-  if (contentType === "image/png") {
-    return buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    return "image/png";
   }
 
-  if (contentType === "image/webp") {
-    return buffer.length >= 12
-      && buffer.subarray(0, 4).toString("ascii") === "RIFF"
-      && buffer.subarray(8, 12).toString("ascii") === "WEBP";
+  if (
+    buffer.length >= 12
+    && buffer.subarray(0, 4).toString("ascii") === "RIFF"
+    && buffer.subarray(8, 12).toString("ascii") === "WEBP"
+  ) {
+    return "image/webp";
   }
 
-  return false;
+  return "";
 }
 
 function toPublicEvent(event) {
